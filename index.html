@@ -11,18 +11,8 @@
 
     function initMatrices(x,y,z)
     {
-         // The transform matrix for the square - translate back in Z for the camera
-       
-         // The projection matrix (for a 45 degree field of view)
-         var tMat = t3d.Matrix.rotate(x, y, z);
-         var lMat = t3d.Matrix.lookAt(0,0,2);
-         var aMat = t3d.Matrix.multiply(lMat, tMat);
-
-         var pMat = t3d.Matrix.frustum(-1,1,-1,1,1,100);
-
-         projectionMatrix = new Float32Array(t3d.Matrix.multiply(pMat,aMat));
-
-        
+         var mat = new t3d.Matrix();
+         projectionMatrix = mat.rotate(x,y,z).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100).toGLArray();        
     }
 
     // Create the vertex data for a square to be drawn

@@ -56,39 +56,50 @@ var t3d = {
     return glContext;
   },
 
-  Matrix: {
+  Matrix: function() {
+    this.mat = [1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1];
+  },
+
+
+  //XXX the private items/function should be protected in someway
+  glContext: null
+
+};
+
+t3d.Matrix.prototype = {
   /*We use a normal array (with 16 elements) to represent a 4x4 matrix*/
 
-    multiply: function(aMatrixA, aMatrixB) {
-      var result = new Array(16);
+    __multiplyM: function(aMatrixA) {
+      var orig = this.mat.slice(0,16);
 
       for (var i = 0; i < 4; i++) {
         for (var j = 0; j < 4; j++) {
-          result[i + j * 4] = 0;
+          this.mat[i + j * 4] = 0;
           for (var k = 0; k < 4; k++) {
-            result[i + j * 4] += aMatrixA[i + k * 4] * aMatrixB[k + j * 4];
+            this.mat[i + j * 4] += aMatrixA[i + k * 4] * orig[k + j * 4];
           }
         }
       }
-
-      return result;
     },
 
-    transpose: function(aMatrix) {
-      var result = new Array(16);
-
+    transpose: function() {
       for (var i = 0; i < 4; i++) {
-        result[i * 4 + i] = aMatrix[i * 4 + i];
+        this.mat[i * 4 + i] = this.mat[i * 4 + i];
 
         for (var j = 0; j < i; j++) {
-          result[i * 4 + j] = aMatrix[j * 4 + i];
-          result[j * 4 + i] = aMatrix[i * 4 + j];
+          this.mat[i * 4 + j] = this.mat[j * 4 + i];
+          this.mat[j * 4 + i] = this.mat[i * 4 + j];
         }
       }
+
+      return this;
     },
 
     frustum: function(aLeft, aRight, aBottom, aTop, aNear, aFar) {
-      var result =
+      var m =
           [(2 * aNear) / (aRight - aLeft), 0, 0, 0,
            0, (2 * aNear) / (aTop - aBottom), 0, 0,
            (aRight + aLeft) / (aRight - aLeft),
@@ -96,25 +107,28 @@ var t3d = {
                 -(aNear + aFar) / (aFar - aNear), -1,
            0, 0, (-2 * aNear * aFar) / (aFar - aNear), 0];
 
-      return result;
+      this.__multiplyM(m);
+      return this;
     },
 
     lookAt: function(aPosX, aPosY, aPosZ) {
-      var result = [1, 0, 0, 0,
+      var m = [1, 0, 0, 0,
                     0, 1, 0, 0,
                     0, 0, 1, 0,
                     -aPosX, -aPosY, -aPosZ, 1];
 
-      return result;
+      this.__multiplyM(m);
+      return this;
     },
 
     translate: function(aDistX, aDistY, aDistZ) {
-      var result = [1, 0, 0, 0,
+      var m = [1, 0, 0, 0,
                     0, 1, 0, 0,
                     0, 0, 1, 0,
                     aDistX, aDistY, aDistZ, 1];
-
-      return result;
+      
+      this.__multiplyM(m);
+      return this;
     },
 
     __d2r: function(degree) {
@@ -122,10 +136,6 @@ var t3d = {
     },
 
     rotate: function(aDegreeX, aDegreeY, aDegreeZ) {
-      var result = [1, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1];
 
       if (aDegreeX > 180 || aDegreeX < -180) {
         throw Error('aDegreeX is out of range:' + aDegreeX);
@@ -155,27 +165,27 @@ var t3d = {
              0 - Math.sin(this.__d2r(aDegreeY)), 0, Math.cos(this.__d2r(aDegreeY)), 0,
              0, 0, 0, 1];
 
-      result = this.multiply(mRotateX, mRotateY);
-      result = this.multiply(result, mRotateZ);
+      this.__multiplyM(mRotateX);
+      this.__multiplyM(mRotateY);
+      this.__multiplyM(mRotateZ);
 
-      return result;
+      return this;
     },
 
     scale: function(aFactorX, aFactorY, aFactorZ) {
-      var result = [aFactorX, 0, 0, 0,
+      var m = [aFactorX, 0, 0, 0,
                    0, aFactorY, 0, 0,
                    0, 0, aFactorZ, 0,
                    0, 0, 0, 1];
 
-      return result;
+      this.__multiplyM(m);
+      return this;
+    },
+
+    toGLArray: function() {
+      return new Float32Array(this.mat);
     }
-
-  },
-
-
-  //XXX the private items/function should be protected in someway
-  glContext: null
-
+  
 };
 
 
