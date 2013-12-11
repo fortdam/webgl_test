@@ -7,15 +7,20 @@
 <script type="text/javascript">
 
 
-    var projectionMatrix, modelViewMatrix;
+    var projectionMatrix;
 
-    function initMatrices()
+    function initMatrices(x,y,z)
     {
          // The transform matrix for the square - translate back in Z for the camera
-         modelViewMatrix = new Float32Array(t3d.Matrix.lookAt(0,0,-2));
        
          // The projection matrix (for a 45 degree field of view)
-         projectionMatrix = new Float32Array(t3d.Matrix.frustum(-0.5,0.5,-1,1,1,100));
+         var tMat = t3d.Matrix.rotate(x, y, z);
+         var lMat = t3d.Matrix.lookAt(0,0,2);
+         var aMat = t3d.Matrix.multiply(lMat, tMat);
+
+         var pMat = t3d.Matrix.frustum(-1,1,-1,1,1,100);
+
+         projectionMatrix = new Float32Array(t3d.Matrix.multiply(pMat,aMat));
 
         
     }
@@ -26,10 +31,10 @@
             vertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
         var verts = [
-             .5, .5, 0.0,
-            -.5, .5, 0.0,
-             .5, -.5, 0.0,
-            -.5, -.5, 0.0
+             .8, .8, 0.0,
+            -.8, .8, 0.0,
+             .8, -.8, 0.0,
+            -.8, -.8, 0.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
         var square = {buffer:vertexBuffer, vertSize:3, nVerts:4, primtype:gl.TRIANGLE_STRIP};
@@ -41,11 +46,10 @@
         var vertexShaderSource =
                 
                 " attribute vec3 vertexPos;\n" +
-                " uniform mat4 modelViewMatrix;\n" +
                 " uniform mat4 projectionMatrix;\n" +
                 " void main(void) {\n" +
                 "                // Return the transformed and projected vertex value\n" +
-                " gl_Position = projectionMatrix * modelViewMatrix * \n" +
+                " gl_Position = projectionMatrix * \n" +
                 " vec4(vertexPos, 1.0);\n" +
                 " }\n";
 
@@ -58,7 +62,7 @@
             "}\n";
 
 
-    var shaderProgram, shaderVertexPositionAttribute, shaderProjectionMatrixUniform, shaderModelViewMatrixUniform;
+    var shaderProgram, shaderVertexPositionAttribute, shaderProjectionMatrixUniform ;
     var shaderColorUniform;
 
     function initShader(gl) {
@@ -76,7 +80,6 @@ catch (e)
         gl.enableVertexAttribArray(shaderVertexPositionAttribute);
         
         shaderProjectionMatrixUniform = gl.getUniformLocation(shaderProgram, "projectionMatrix");
-        shaderModelViewMatrixUniform = gl.getUniformLocation(shaderProgram, "modelViewMatrix");
         shaderColorUniform = gl.getUniformLocation(shaderProgram, "ccolor");
         
     }
@@ -96,7 +99,6 @@ catch (e)
                  // connect up the shader parameters: vertex position and projection/model matrices
          gl.vertexAttribPointer(shaderVertexPositionAttribute, obj.vertSize, gl.FLOAT, false, 0, 0);
          gl.uniformMatrix4fv(shaderProjectionMatrixUniform, false, projectionMatrix);
-         gl.uniformMatrix4fv(shaderModelViewMatrixUniform, false, modelViewMatrix);
          gl.uniform4f(shaderColorUniform, color, color, color, 1.0);
 
          // draw the object
@@ -105,10 +107,10 @@ catch (e)
           
     function onLoad() {
         var canvas = document.getElementById("webglcanvas");
-        
+        try {
         var gl = t3d.init(canvas);
   
-        initMatrices();
+        initMatrices(0,0,0);
         
         var square = createSquare(gl);
         
@@ -116,8 +118,32 @@ catch (e)
         draw(t3d.getGL(), square, 1.0);
         
         var colorStep = 1.0;
+        var xD = 0;
+        var yD = 0; 
+        var zD = 0;
         
-        window.setInterval(function(){colorStep -= 0.1; colorStep = (colorStep<=0)?1.0:colorStep; draw(t3d.getGL(), square, colorStep)}, 200);
+        window.setInterval(function(){
+                xD += 2;
+                yD += 3
+                zD += 4;
+
+                xD = (xD>180)?-180:xD;
+                yD = (yD>180)?-180:yD;
+                zD = (zD>180)?-180:zD;
+
+                initMatrices(xD, yD, zD);
+
+                colorStep -= 0.1; 
+                //colorStep = (colorStep<=0)?1.0:colorStep;
+
+                colorStep = 0.8;
+                
+                draw(t3d.getGL(), square, colorStep)
+            }, 20);
+         }
+        catch(e) {
+        alert("Error" + e.toString());
+        }
     }
 
 
