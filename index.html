@@ -6,39 +6,14 @@
 <script src="t3d.js"></script>
 <script type="text/javascript">
 
+    var drawObject1, drawObject2, drawObject3;
+    var projectionMatrix1, projectionMatrix2,projectionMatrix3;
 
-    var projectionMatrix;
-
-    function initMatrices(x,y,z)
-    {
-         var mat = new t3d.Matrix();
-         projectionMatrix = mat.rotate(x,y,z).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100).toGLArray();        
-    }
-
-    // Create the vertex data for a square to be drawn
-    function createSquare(gl) {
-        var vertexBuffer;
-            vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        var verts = [
-             .8, .8, 0.0,
-            -.8, .8, 0.0,
-             .8, -.8, 0.0,
-            -.8, -.8, 0.0
-        ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
-        var square = {buffer:vertexBuffer, vertSize:3, nVerts:4, primtype:gl.TRIANGLE_STRIP};
-        return square;
-    }
-
-
-    
         var vertexShaderSource =
-                
                 " attribute vec3 vertexPos;\n" +
                 " uniform mat4 projectionMatrix;\n" +
                 " void main(void) {\n" +
-                "                // Return the transformed and projected vertex value\n" +
+                " // Return the transformed and projected vertex value\n" +
                 " gl_Position = projectionMatrix * \n" +
                 " vec4(vertexPos, 1.0);\n" +
                 " }\n";
@@ -51,65 +26,92 @@
         " gl_FragColor = ccolor;\n" +
             "}\n";
 
+     function draw() {
+         t3d.startDraw();
+         drawObject1.draw();
+         //drawObject2.draw();
+         //drawObject3.draw();
 
-    var shaderProgram, shaderVertexPositionAttribute, shaderProjectionMatrixUniform ;
-    var shaderColorUniform;
-
-    function initShader(gl) {
-        try {
-        shaderProgram = t3d.setupProgram(vertexShaderSource, fragmentShaderSource);
-
-}
-catch (e)
-{
-    alert(e.toString());
-}    
-
-// get pointers to the shader params
-        shaderVertexPositionAttribute = gl.getAttribLocation(shaderProgram, "vertexPos");
-        gl.enableVertexAttribArray(shaderVertexPositionAttribute);
-        
-        shaderProjectionMatrixUniform = gl.getUniformLocation(shaderProgram, "projectionMatrix");
-        shaderColorUniform = gl.getUniformLocation(shaderProgram, "ccolor");
-        
-    }
-
-     function draw(gl, obj, color) {
-
-         // clear the background (with black)
-         gl.clearColor(0.0, 0.0, 0.0, 1.0);
-         gl.clear(gl.COLOR_BUFFER_BIT);
-
-             // set the vertex buffer to be drawn
-         gl.bindBuffer(gl.ARRAY_BUFFER, obj.buffer);
-
-         // set the shader to use
-         gl.useProgram(shaderProgram);
-
-                 // connect up the shader parameters: vertex position and projection/model matrices
-         gl.vertexAttribPointer(shaderVertexPositionAttribute, obj.vertSize, gl.FLOAT, false, 0, 0);
-         gl.uniformMatrix4fv(shaderProjectionMatrixUniform, false, projectionMatrix);
-         gl.uniform4f(shaderColorUniform, color, color, color, 1.0);
-
-         // draw the object
-         gl.drawArrays(obj.primtype, 0, obj.nVerts);
       }
           
+    function initObj1() {
+             projectionMatrix1 = (new Matrix()).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+
+         drawObject1 = new DrawObject();
+         drawObject1.setupProgram(vertexShaderSource, fragmentShaderSource);
+
+         var verts = [
+             .1, .8, 0.0,
+            -.8, .8, 0.0,
+             .1, -.8, 0.0,
+            -.8, -.8, 0.0
+        ];
+         drawObject1.addVertexData("vertexPos", 3, verts);
+
+         var indice = [0,1,2, 1,2,3];
+         drawObject1.addVertexIndex(indice);
+ 
+         drawObject1.addUniform("projectionMatrix", "matrix", 4, projectionMatrix1);
+         drawObject1.addUniform("ccolor", "float", 4, [0, 1.0, 0, 0.5]);
+
+    }
+
+    function initObj2() {
+             projectionMatrix2 = (new Matrix()).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+
+         drawObject2 = new DrawObject();
+         drawObject2.setupProgram(vertexShaderSource, fragmentShaderSource);
+
+         var verts = [
+             .8, .8, 0.0,
+            -.1, .8, 0.0,
+             .8, -.8, 0.0,
+            -.1, -.8, 0.0
+        ];
+         drawObject2.addVertexData("vertexPos", 3, verts);
+
+         var indice = [0,1,2, 1,2,3];
+         drawObject2.addVertexIndex(indice);
+ 
+         drawObject2.addUniform("projectionMatrix", "matrix", 4, projectionMatrix1);
+         drawObject2.addUniform("ccolor", "float", 4, [1.0, 0, 0, 0.5]);
+
+    }
+
+    function initObj3() {
+             projectionMatrix3 = (new Matrix()).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+
+         drawObject3 = new DrawObject();
+         drawObject3.setupProgram(vertexShaderSource, fragmentShaderSource);
+
+         var verts = [
+             0, .5, 0.0,
+            -.5, -.5, 0.0,
+             .5, -.5, 0.0,
+         ];
+         drawObject3.addVertexData("vertexPos", 3, verts);
+
+         var indice = [0,1,2];
+         drawObject3.addVertexIndex(indice);
+ 
+         drawObject3.addUniform("projectionMatrix", "matrix", 4, projectionMatrix1);
+         drawObject3.addUniform("ccolor", "float", 4, [0, 0, 1.0, 0.5]);
+
+    }
+
     function onLoad() {
         var canvas = document.getElementById("webglcanvas");
         try {
         var gl = t3d.init(canvas);
   
-        initMatrices(0,0,0);
-        
-        var square = createSquare(gl);
-        
-        initShader(gl);
-        draw(t3d.getGL(), square, 1.0);
+        initObj1();
+        initObj2();
+        initObj3();
+        draw();
         
         var colorStep = 1.0;
         var xD = 0;
-        var yD = 0; 
+        var yD = 0;
         var zD = 0;
         
         window.setInterval(function(){
@@ -121,18 +123,20 @@ catch (e)
                 yD = (yD>180)?-180:yD;
                 zD = (zD>180)?-180:zD;
 
-                initMatrices(xD, yD, zD);
-
-                colorStep -= 0.1; 
-                //colorStep = (colorStep<=0)?1.0:colorStep;
-
-                colorStep = 0.8;
+         projectionMatrix1 = (new Matrix()).rotate(xD, yD, zD).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+         drawObject1.addUniform("projectionMatrix", "matrix", 4, projectionMatrix1);
                 
-                draw(t3d.getGL(), square, colorStep)
+                         projectionMatrix2 = (new Matrix()).rotate(-yD, -zD, -xD).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+         drawObject2.addUniform("projectionMatrix", "matrix", 4, projectionMatrix2);
+
+                         projectionMatrix3 = (new Matrix()).rotate(0, -yD, -zD).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+         drawObject3.addUniform("projectionMatrix", "matrix", 4, projectionMatrix3);
+
+                draw()
             }, 20);
          }
         catch(e) {
-        alert("Error" + e.toString());
+        alert("Error" + e.toString() + " line:" +e.lineNumber);
         }
     }
 
