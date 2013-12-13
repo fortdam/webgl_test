@@ -72,9 +72,7 @@ Matrix.prototype = {
       var m =
           [(2 * aNear) / (aRight - aLeft), 0, 0, 0,
            0, (2 * aNear) / (aTop - aBottom), 0, 0,
-           (aRight + aLeft) / (aRight - aLeft),
-                (aTop + aBottom) / (aTop - aBottom),
-                -(aNear + aFar) / (aFar - aNear), -1,
+           (aRight + aLeft) / (aRight - aLeft), (aTop + aBottom) / (aTop - aBottom), -(aNear + aFar) / (aFar - aNear), -1,
            0, 0, (-2 * aNear * aFar) / (aFar - aNear), 0];
 
       this.__multiplyM(m);
@@ -162,6 +160,7 @@ function DrawObject() {
   this.__VBO = [];
   this.__index = {};
   this.__uniforms = [];
+  this.__textures = [];
 }
 
 DrawObject.prototype = {
@@ -249,6 +248,7 @@ DrawObject.prototype = {
     var gl = t3d.getGL();
     gl.useProgram(this.__program);
 
+    //Vertex Array
     for (var i=0; i<this.__VBO.length; i++){
       var VBOItem = this.__VBO[i];
 
@@ -257,6 +257,7 @@ DrawObject.prototype = {
       gl.vertexAttribPointer(VBOItem.pos, VBOItem.len, VBOItem.type, false, 0, 0);
     }
     
+    //Uniform
     for (i=0; i<this.__uniforms.length; i++){
       var item = this.__uniforms[i];
 
@@ -281,11 +282,26 @@ DrawObject.prototype = {
       }
     }
 
+    //Texture
+    for (i=0; i<this.__textures.length; i++){
+      var texture = this.__textures[i];
+      
+      gl.activeTexture(gl.TEXTURE0 + i);
+      gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+      gl.uniform1i(texture.pos, i);
+    }
+
+
+    //Index Array
     if(!this.__index.buffer){
       throw Error("Only support index draw now");
     }
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.__index.buffer);
+
+    gl.cullFace(gl.FRONT);
+    gl.enable(gl.DEPTH_TEST);
+
     gl.drawElements(gl.TRIANGLES, this.__index.num, gl.UNSIGNED_SHORT, 0);
     //gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   },
@@ -303,12 +319,46 @@ DrawObject.prototype = {
       var item = this.__uniforms[i];
 
       if (item.name == aVariable){
-        this.__uniforms.splice(i,1);
+        this.__uniforms.splice(i, 1);
         break;
       }
     }
 
     this.__uniforms[this.__uniforms.length] = {name: aVariable, pos: position, type: aType.toLowerCase(), len: aLen, data: aArray};
+  },
+
+  addTexture: function(aName, aImage) {
+    this.__check();
+
+    var gl = t3d.getGL();
+
+    for (var i=0; i<this.__textures.length; i++){
+      if (this.__textures[i].name == aName){
+        this.__textures.splice(i, 1);
+        break;
+      }
+    }
+    
+    var item = {name: aName};
+    item.texture = gl.createTexture();
+
+    gl.bindTexture(gl.TEXTURE_2D, item.texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, aImage);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    item.pos = gl.getUniformLocation(this.__program, aName);
+
+    if (!item.pos){
+      throw Error("Can not find uniform " + aName);
+    }
+
+    this.__textures[this.__textures.length] = item;
+
+    return this;
   },
 
   __getProgram: function(){
