@@ -33,34 +33,16 @@
      function draw() {
          t3d.startDraw();
 
-         var gl = t3d.getGL();
-
-         /*
-         var texture = gl.createTexture();
-         
-         gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image1);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); //Prevents s-coordinate wrapping (repeating).
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); //Prevents t-coordinate wrapping (repeating).
-  var pos = gl.getUniformLocation(drawObject1.__program, "texi");
-
-         gl.activeTexture(gl.TEXTURE0);
-         gl.bindTexture(gl.TEXTURE_2D, texture);
-  */
- // gl.uniform1i(pos, 0);//!!!!
-
-  
+         var gl = t3d.getGL();  
 
          drawObject1.draw();
-         //drawObject2.draw();
+         drawObject2.draw();
          //drawObject3.draw();
 
       }
           
     function initObj1() {
-             projectionMatrix1 = (new Matrix()).lookAt(0,0,4).frustum(-1,1,-1,1,1,100);
+             projectionMatrix1 = (new Matrix()).translate(-2,0,0).lookAt(0,0,4).frustum(-1,1,-1,1,1,100);
 
          drawObject1 = new DrawObject();
          drawObject1.setupProgram(vertexShaderSource, fragmentShaderSource);
@@ -156,26 +138,99 @@
     }
 
     function initObj2() {
-             projectionMatrix2 = (new Matrix()).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+             projectionMatrix2 = (new Matrix()).translate(2,0,0).lookAt(0,0,4).frustum(-1,1,-1,1,1,100);
 
          drawObject2 = new DrawObject();
          drawObject2.setupProgram(vertexShaderSource, fragmentShaderSource);
 
          var verts = [
-             .8, .8, 0.0,
-            -.1, .8, 0.0,
-             .8, -.8, 0.0,
-            -.1, -.8, 0.0
-        ];
+// Front face
+    -1.0, -1.0,  1.0,
+     1.0, -1.0,  1.0,
+     1.0,  1.0,  1.0,
+    -1.0,  1.0,  1.0,
+    
+    // Back face
+    -1.0, -1.0, -1.0,
+    -1.0,  1.0, -1.0,
+     1.0,  1.0, -1.0,
+     1.0, -1.0, -1.0,
+    
+    // Top face
+    -1.0,  1.0, -1.0,
+    -1.0,  1.0,  1.0,
+     1.0,  1.0,  1.0,
+     1.0,  1.0, -1.0,
+    
+    // Bottom face
+    -1.0, -1.0, -1.0,
+     1.0, -1.0, -1.0,
+     1.0, -1.0,  1.0,
+    -1.0, -1.0,  1.0,
+    
+    // Right face
+     1.0, -1.0, -1.0,
+     1.0,  1.0, -1.0,
+     1.0,  1.0,  1.0,
+     1.0, -1.0,  1.0,
+    
+    // Left face
+    -1.0, -1.0, -1.0,
+    -1.0, -1.0,  1.0,
+    -1.0,  1.0,  1.0,
+    -1.0,  1.0, -1.0 ];
+
+        var texPos = [
+// Front
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0,
+    0.0,  1.0,
+    // Back
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0,
+    0.0,  1.0,
+    // Top
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0,
+    0.0,  1.0,
+    // Bottom
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0,
+    0.0,  1.0,
+    // Right
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0,
+    0.0,  1.0,
+    // Left
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0,
+    0.0,  1.0
+    
+    ];
          drawObject2.addVertexData("vertexPos", 3, verts);
-         //drawObject2.addVertexData("vertexPos", 2, verts);
+         drawObject2.addVertexData("tex_coord", 2, texPos);
 
-
-         var indice = [0,1,2, 1,2,3];
+         var indice = [0,  1,  2,      0,  2,  3,    // front
+         
+    4,  5,  6,      4,  6,  7,    // back
+    8,  9,  10,     8,  10, 11,   // top
+    12, 13, 14,     12, 14, 15,   // bottom
+    16, 17, 18,     16, 18, 19,   // right
+    20, 21, 22,     20, 22, 23    // left
+    
+    ];
          drawObject2.addVertexIndex(indice);
  
-         drawObject2.addUniform("projectionMatrix", "matrix", 4, projectionMatrix1);
-         drawObject2.addUniform("ccolor", "float", 4, [1.0, 0, 0, 0.5]);
+         drawObject2.addUniform("projectionMatrix", "matrix", 4, projectionMatrix2);
+         drawObject2.addUniform("ccolor", "float", 4, [0, 1.0, 0, 0.5]);
+
+         drawObject2.addTexture("texi", image2);
 
     }
 
@@ -202,7 +257,11 @@
 
     function onLoad() {
        image1 = new Image();
-       image1.onload = function(){onImgLoad()};
+       image2 = new Image();
+       image1.onload = function(){
+                               image2.onload = function(){onImgLoad()};
+                               image2.src = "test2.jpg"
+                               };
        image1.src = "test1.png";
        
     }
@@ -213,7 +272,7 @@
         var gl = t3d.init(canvas);
   
         initObj1();
-       // initObj2();
+        initObj2();
       //  initObj3();
         draw();
         
@@ -231,12 +290,13 @@
                 yD = (yD>180)?-180:yD;
                 zD = (zD>180)?-180:zD;
 
-         projectionMatrix1 = (new Matrix()).rotate(xD, yD, zD).lookAt(0,0,4).frustum(-1,1,-1,1,1,100);
+         projectionMatrix1 = (new Matrix()).rotate(xD, yD, zD).translate(-2,0,0).lookAt(0,0,4).frustum(-1,1,-1,1,1,100);
          drawObject1.addUniform("projectionMatrix", "matrix", 4, projectionMatrix1);
-                /*
-                         projectionMatrix2 = (new Matrix()).rotate(-yD, -zD, -xD).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
+                
+                         projectionMatrix2 = (new Matrix()).rotate(-yD, -zD, -xD).translate(2,0,0).lookAt(0,0,4).frustum(-1,1,-1,1,1,100);
          drawObject2.addUniform("projectionMatrix", "matrix", 4, projectionMatrix2);
 
+/*
                          projectionMatrix3 = (new Matrix()).rotate(0, -yD, -zD).lookAt(0,0,2.5).frustum(-1,1,-1,1,1,100);
          drawObject3.addUniform("projectionMatrix", "matrix", 4, projectionMatrix3);
 */
